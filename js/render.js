@@ -39,10 +39,14 @@ export function drawBoard(ctx, board, player, cellSize) {
   const h = ROWS * cellSize;
   ctx.clearRect(0, 0, w, h);
 
+  const blinkRows = player.lineClearAnim?.rows;
+  const blinkVisible = player.lineClearAnim?.visible ?? true;
+
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) {
       const v = board.grid[y][x];
       if (v !== 0) {
+        if (blinkRows?.includes(y) && !blinkVisible) continue;
         const color = CELL_COLORS[v] ?? "#ffffff";
         const alpha =
           v === CELL_GARBAGE && board.garbageHp[y][x] >= 2 ? 0.85 : 1;

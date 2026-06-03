@@ -79,6 +79,15 @@ function isRowEmpty(board, y) {
   return true;
 }
 
+/** 完成している行のインデックス一覧 */
+export function getFullRowIndices(board) {
+  const rows = [];
+  for (let y = 0; y < ROWS; y++) {
+    if (isRowFull(board, y)) rows.push(y);
+  }
+  return rows;
+}
+
 /**
  * 完成したラインを消去。お邪魔は2回のライン消去で消える。
  * @returns {{ clearedLines: number }}

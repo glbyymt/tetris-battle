@@ -1,6 +1,6 @@
 import { GameSession } from "./game.js";
 import { SUB_MODE } from "./modes.js";
-import { TIME_ATTACK_LIMIT_SEC } from "./constants.js";
+import { TIME_ATTACK_LIMIT_SEC, BATTLE_LIMIT_SEC } from "./constants.js";
 
 const screens = {
   title: document.getElementById("screen-title"),
@@ -38,6 +38,7 @@ function startGame(playerCount, subMode) {
     session = null;
   }
   clearInterval(timerInterval);
+  document.getElementById("time-up-overlay")?.classList.remove("active");
 
   const modeNames = {
     [SUB_MODE.TIME_ATTACK]: "タイムアタック",
@@ -45,9 +46,16 @@ function startGame(playerCount, subMode) {
   };
   gameModeLabel.textContent = `${playerCount}人プレイ / ${modeNames[subMode]}`;
 
-  if (subMode === SUB_MODE.TIME_ATTACK) {
+  const limitSec =
+    subMode === SUB_MODE.TIME_ATTACK
+      ? TIME_ATTACK_LIMIT_SEC
+      : subMode === SUB_MODE.BATTLE
+        ? BATTLE_LIMIT_SEC
+        : null;
+
+  if (limitSec != null) {
     gameTimer.classList.remove("hidden");
-    gameTimer.textContent = formatTime(TIME_ATTACK_LIMIT_SEC);
+    gameTimer.textContent = formatTime(limitSec);
   } else {
     gameTimer.classList.add("hidden");
   }
@@ -61,7 +69,7 @@ function startGame(playerCount, subMode) {
   });
   session.mount(gameBoards);
 
-  if (subMode === SUB_MODE.TIME_ATTACK) {
+  if (limitSec != null) {
     timerInterval = setInterval(() => {
       const rem = session?.getRemainingTimeSec();
       if (rem != null) gameTimer.textContent = formatTime(rem);

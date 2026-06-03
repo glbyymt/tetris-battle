@@ -144,6 +144,34 @@ body {
   font-weight: 600;
 }
 
+.game-boards-area {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.time-up-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  text-shadow:
+    0 0 20px rgba(233, 69, 96, 0.8),
+    0 4px 24px rgba(0, 0, 0, 0.9);
+}
+
+.time-up-overlay.active {
+  display: flex;
+}
+
 .game-boards {
   display: flex;
   flex-wrap: wrap;

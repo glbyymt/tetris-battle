@@ -1,4 +1,8 @@
-import { TIME_ATTACK_LIMIT_SEC } from "./constants.js";
+import {
+  TIME_ATTACK_LIMIT_SEC,
+  BATTLE_LIMIT_SEC,
+  TIME_UP_DISPLAY_MS,
+} from "./constants.js";
 import { SUB_MODE, applyLineClear } from "./modes.js";
 import {
   createPlayer,
@@ -8,6 +12,9 @@ import {
   softDrop,
   lockCurrentPiece,
   updateDropSpeed,
+  finishLineClearAnim,
+  tickLineClearAnim,
+  isInputLocked,
 } from "./player.js";
 import { drawBoard, drawNext, setupCanvas, CELL_SIZE, NEXT_CELL_SIZE } from "./render.js";
 import { createInputManager } from "./input.js";
@@ -21,13 +28,24 @@ export class GameSession {
       createPlayer(i)
     );
     this.running = false;
+    this.phase = "playing";
+    this.timeUpElapsed = 0;
     this.elapsedMs = 0;
-    this.timeLimitMs =
-      subMode === SUB_MODE.TIME_ATTACK ? TIME_ATTACK_LIMIT_SEC * 1000 : null;
+    this.timeLimitMs = this.getTimeLimitMs(subMode);
     this.rafId = null;
     this.lastTs = 0;
     this.input = null;
     this.dom = {};
+  }
+
+  getTimeLimitMs(subMode) {
+    if (subMode === SUB_MODE.TIME_ATTACK) {
+      return TIME_ATTACK_LIMIT_SEC * 1000;
+    }
+    if (subMode === SUB_MODE.BATTLE) {
+      return BATTLE_LIMIT_SEC * 1000;
+    }
+    return null;
   }
 
   mount(container) {
@@ -76,6 +94,8 @@ export class GameSession {
       this.dom.stats.push(stats);
     }
 
+    this.dom.timeUpOverlay = document.getElementById("time-up-overlay");
+
     for (const p of this.players) {
       spawnPiece(p);
     }
@@ -85,6 +105,8 @@ export class GameSession {
       this.createInputCallbacks()
     );
     this.running = true;
+    this.phase = "playing";
+    this.timeUpElapsed = 0;
     this.lastTs = performance.now();
     this.rafId = requestAnimationFrame((ts) => this.loop(ts));
   }
@@ -94,17 +116,17 @@ export class GameSession {
     return {
       onMove(i, dx, dy) {
         const p = self.players[i];
-        if (!p || p.gameOver) return;
+        if (!p || isInputLocked(p)) return;
         tryMove(p, dx, dy);
       },
       onSoftDrop(i) {
         const p = self.players[i];
-        if (!p || p.gameOver) return;
+        if (!p || isInputLocked(p)) return;
         if (softDrop(p)) p.dropTimer = 0;
       },
       onRotate(i) {
         const p = self.players[i];
-        if (!p || p.gameOver) return;
+        if (!p || isInputLocked(p)) return;
         tryRotate(p);
       },
     };
@@ -114,18 +136,50 @@ export class GameSession {
     this.running = false;
     if (this.rafId) cancelAnimationFrame(this.rafId);
     this.input?.destroy();
+    this.hideTimeUpOverlay();
+  }
+
+  showTimeUpOverlay() {
+    this.dom.timeUpOverlay?.classList.add("active");
+  }
+
+  hideTimeUpOverlay() {
+    this.dom.timeUpOverlay?.classList.remove("active");
   }
 
   loop(ts) {
     if (!this.running) return;
     const dt = Math.min(ts - this.lastTs, 50);
     this.lastTs = ts;
+
+    if (this.phase === "time-up") {
+      this.timeUpElapsed += dt;
+      this.render();
+      this.updateStatsDom();
+      if (this.timeUpElapsed >= TIME_UP_DISPLAY_MS) {
+        this.running = false;
+        this.hideTimeUpOverlay();
+        this.onEnd(this.buildResults());
+        return;
+      }
+      this.rafId = requestAnimationFrame((t) => this.loop(t));
+      return;
+    }
+
     this.elapsedMs += dt;
 
-    if (this.timeLimitMs != null && this.elapsedMs >= this.timeLimitMs) {
-      for (const p of this.players) {
-        if (!p.gameOver) p.gameOver = true;
-      }
+    if (
+      this.timeLimitMs != null &&
+      this.elapsedMs >= this.timeLimitMs &&
+      this.phase === "playing"
+    ) {
+      this.phase = "time-up";
+      this.timeUpElapsed = 0;
+      this.showTimeUpOverlay();
+      this.render();
+      this.updateStatsDom();
+      this.rafId = requestAnimationFrame((t) => this.loop(t));
+      return;
     }
 
     for (const p of this.players) {
@@ -133,6 +187,7 @@ export class GameSession {
     }
 
     this.input.update(dt, this.playerCount);
+    this.updateLineClearAnimations(dt);
     this.updateGravity(dt);
     this.render();
     this.updateStatsDom();
@@ -146,15 +201,30 @@ export class GameSession {
     this.rafId = requestAnimationFrame((t) => this.loop(t));
   }
 
+  updateLineClearAnimations(dt) {
+    for (const p of this.players) {
+      if (!p.lineClearAnim) continue;
+      if (!tickLineClearAnim(p, dt)) continue;
+
+      const { clearedLines } = finishLineClearAnim(p);
+      applyLineClear(p, clearedLines, this.subMode, this.players);
+      spawnPiece(p);
+    }
+  }
+
   updateGravity(dt) {
     for (const p of this.players) {
-      if (p.gameOver || !p.current) continue;
+      if (p.gameOver || p.lineClearAnim) continue;
+
+      if (!p.current) continue;
+
       p.dropTimer += dt;
       if (p.dropTimer >= p.dropInterval) {
         p.dropTimer = 0;
         if (!softDrop(p)) {
-          const { clearedLines } = lockCurrentPiece(p);
-          applyLineClear(p, clearedLines, this.subMode, this.players);
+          const lockResult = lockCurrentPiece(p);
+          if (lockResult.pendingLineClear) continue;
+          applyLineClear(p, lockResult.clearedLines, this.subMode, this.players);
           spawnPiece(p);
         }
       }
@@ -185,9 +255,6 @@ export class GameSession {
   }
 
   checkGameEnd() {
-    if (this.timeLimitMs != null && this.elapsedMs >= this.timeLimitMs) {
-      return true;
-    }
     if (this.subMode === SUB_MODE.BATTLE) {
       const alive = this.players.filter((p) => !p.gameOver);
       return alive.length <= 1;
@@ -199,7 +266,9 @@ export class GameSession {
   }
 
   buildResults() {
-    const playTimeSec = Math.floor(this.elapsedMs / 1000);
+    const playTimeSec = Math.floor(
+      Math.min(this.elapsedMs, this.timeLimitMs ?? this.elapsedMs) / 1000
+    );
     const ranked = [...this.players]
       .map((p) => ({
         index: p.index,

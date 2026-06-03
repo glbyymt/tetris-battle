@@ -5,6 +5,18 @@ export const ROWS = 24;
 /** タイムアタック制限時間（秒） */
 export const TIME_ATTACK_LIMIT_SEC = 5 * 60;
 
+/** 対戦モード制限時間（秒） */
+export const BATTLE_LIMIT_SEC = 10 * 60;
+
+/** TIME UP 表示後、結果画面へ遷移するまでの待機（ミリ秒） */
+export const TIME_UP_DISPLAY_MS = 3000;
+
+/** ライン消去の点滅アニメーション時間（ミリ秒） */
+export const LINE_CLEAR_ANIM_MS = 800;
+
+/** ライン消去点滅の切り替え間隔（ミリ秒） */
+export const LINE_CLEAR_BLINK_MS = 100;
+
 /** 落下間隔の下限（ミリ秒） */
 export const MIN_DROP_MS = 80;
 

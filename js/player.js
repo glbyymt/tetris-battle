@@ -3,6 +3,8 @@ import {
   MIN_DROP_MS,
   SPEED_UP_INTERVAL_MS,
   SPEED_UP_AMOUNT_MS,
+  LINE_CLEAR_ANIM_MS,
+  LINE_CLEAR_BLINK_MS,
 } from "./constants.js";
 import {
   createBoard,
@@ -10,6 +12,7 @@ import {
   getGhostY,
   lockPiece,
   clearLines,
+  getFullRowIndices,
   isBlockedAtSpawn,
 } from "./board.js";
 import { randomPieceType, getBlocks, getSpawnPosition } from "./tetromino.js";
@@ -30,6 +33,8 @@ export function createPlayer(index) {
     dropTimer: 0,
     lockDelay: 0,
     lastSpeedUpAt: 0,
+    /** @type {{ rows: number[], elapsed: number, visible: boolean } | null} */
+    lineClearAnim: null,
   };
 }
 
@@ -56,8 +61,12 @@ export function getCurrentBlocks(player) {
   return getBlocks(player.current, player.rotation);
 }
 
+export function isInputLocked(player) {
+  return player.gameOver || player.lineClearAnim != null;
+}
+
 export function tryMove(player, dx, dy) {
-  if (player.gameOver || !player.current) return false;
+  if (isInputLocked(player) || !player.current) return false;
   const blocks = getCurrentBlocks(player);
   if (!collides(player.board, blocks, player.x + dx, player.y + dy)) {
     player.x += dx;
@@ -68,7 +77,7 @@ export function tryMove(player, dx, dy) {
 }
 
 export function tryRotate(player) {
-  if (player.gameOver || !player.current) return false;
+  if (isInputLocked(player) || !player.current) return false;
   const newRot = (player.rotation + 1) % 4;
   const blocks = getBlocks(player.current, newRot);
   // 簡易ウォールキック: 左右に1マスずらして試行
@@ -88,11 +97,33 @@ export function softDrop(player) {
 }
 
 export function lockCurrentPiece(player) {
-  if (!player.current) return { clearedLines: 0 };
+  if (!player.current) return { pendingLineClear: false, clearedLines: 0 };
   const blocks = getCurrentBlocks(player);
   lockPiece(player.board, player.current, blocks, player.x, player.y);
   player.current = null;
+
+  const fullRows = getFullRowIndices(player.board);
+  if (fullRows.length > 0) {
+    player.lineClearAnim = { rows: fullRows, elapsed: 0, visible: true };
+    return { pendingLineClear: true, clearedLines: 0 };
+  }
+  return { pendingLineClear: false, clearedLines: 0 };
+}
+
+export function finishLineClearAnim(player) {
+  if (!player.lineClearAnim) return { clearedLines: 0 };
+  player.lineClearAnim = null;
   return clearLines(player.board);
+}
+
+/** @returns {boolean} アニメーションが完了したら true */
+export function tickLineClearAnim(player, dt) {
+  const anim = player.lineClearAnim;
+  if (!anim) return false;
+
+  anim.elapsed += dt;
+  anim.visible = Math.floor(anim.elapsed / LINE_CLEAR_BLINK_MS) % 2 === 0;
+  return anim.elapsed >= LINE_CLEAR_ANIM_MS;
 }
 
 export function updateDropSpeed(player, elapsedMs) {
