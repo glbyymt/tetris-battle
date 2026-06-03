@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>テトリスバトル</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- タイトル画面 -->
+    <section id="screen-title" class="screen active">
+      <h1 class="title-logo">テトリスバトル</h1>
+      <p class="subtitle">モードを選択してください</p>
+
+      <div class="mode-section">
+        <h2>メインモード</h2>
+        <div class="btn-group" id="main-mode-buttons">
+          <button type="button" class="btn mode-btn" data-players="1">1人用</button>
+          <button type="button" class="btn mode-btn" data-players="2">2人対戦</button>
+          <button type="button" class="btn mode-btn" data-players="3">3人対戦</button>
+          <button type="button" class="btn mode-btn" data-players="4">4人対戦</button>
+        </div>
+      </div>
+
+      <div class="mode-section hidden" id="sub-mode-section">
+        <h2>サブモード</h2>
+        <p class="hint" id="sub-mode-hint"></p>
+        <div class="btn-group">
+          <button type="button" class="btn sub-mode-btn" data-sub-mode="time-attack">タイムアタック</button>
+          <button type="button" class="btn sub-mode-btn" data-sub-mode="battle">対戦モード</button>
+        </div>
+        <button type="button" class="btn btn-back" id="back-to-main">戻る</button>
+      </div>
+    </section>
+
+    <!-- ゲーム画面 -->
+    <section id="screen-game" class="screen">
+      <div class="game-header">
+        <span id="game-mode-label"></span>
+        <span id="game-timer" class="timer hidden"></span>
+      </div>
+      <div id="game-boards" class="game-boards"></div>
+      <div class="controls-hint">
+        <p>操作：左右移動（押し続けで連続）／下で高速落下／スペースで回転（ゲームパッド対応）</p>
+      </div>
+    </section>
+
+    <!-- 結果画面 -->
+    <section id="screen-result" class="screen">
+      <h2>結果</h2>
+      <div id="result-list" class="result-list"></div>
+      <button type="button" class="btn btn-primary" id="btn-back-title">タイトルへ戻る</button>
+    </section>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

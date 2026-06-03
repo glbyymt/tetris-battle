@@ -1,0 +1,270 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0f0f1a;
+  --surface: #1a1a2e;
+  --accent: #e94560;
+  --accent-hover: #ff6b81;
+  --text: #eaeaea;
+  --text-muted: #a0a0b8;
+  --border: #2d2d44;
+  --cell-size: 24px;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: "Segoe UI", "Hiragino Sans", "Meiryo", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+#app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.screen {
+  display: none;
+  width: 100%;
+  max-width: 1400px;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.screen.active {
+  display: flex;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* タイトル画面 */
+.title-logo {
+  font-size: 2.5rem;
+  letter-spacing: 0.1em;
+  background: linear-gradient(135deg, var(--accent), #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  color: var(--text-muted);
+}
+
+.mode-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 480px;
+}
+
+.mode-section h2 {
+  font-size: 1rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  width: 100%;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.btn:hover {
+  background: #252540;
+  border-color: var(--accent);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-back {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+}
+
+/* ゲーム画面 */
+.game-header {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  font-size: 1.125rem;
+}
+
+.timer {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.game-boards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.player-panel {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.player-panel.game-over {
+  opacity: 0.5;
+}
+
+.player-panel.winner {
+  border-color: #fbbf24;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.3);
+}
+
+.player-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.player-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.player-canvas-wrap {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.canvas-main {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #0a0a12;
+}
+
+.canvas-next {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #0a0a12;
+}
+
+.next-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.controls-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 600px;
+}
+
+/* 結果画面 */
+#screen-result h2 {
+  font-size: 1.75rem;
+}
+
+.result-list {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.result-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 1rem;
+  align-items: center;
+}
+
+.result-card.rank-1 {
+  border-color: #fbbf24;
+}
+
+.result-rank {
+  grid-row: span 3;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 3rem;
+  text-align: center;
+}
+
+.result-card.rank-1 .result-rank {
+  color: #fbbf24;
+}
+
+.result-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.result-detail {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
