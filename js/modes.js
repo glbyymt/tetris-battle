@@ -5,6 +5,7 @@ import { getBlocks } from "./tetromino.js";
 export const SUB_MODE = {
   TIME_ATTACK: "time-attack",
   BATTLE: "battle",
+  SUDDEN_DEATH: "sudden-death",
 };
 
 export function applyLineClear(player, clearedLines, subMode, allPlayers) {

@@ -270,7 +270,10 @@ export class GameSession {
   }
 
   checkGameEnd() {
-    if (this.subMode === SUB_MODE.BATTLE) {
+    if (
+      this.subMode === SUB_MODE.BATTLE ||
+      (this.subMode === SUB_MODE.SUDDEN_DEATH && this.playerCount > 1)
+    ) {
       const alive = this.players.filter((p) => !p.gameOver);
       return alive.length <= 1;
     }

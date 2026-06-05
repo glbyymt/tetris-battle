@@ -10,11 +10,30 @@ const screens = {
 
 const subModeSection = document.getElementById("sub-mode-section");
 const subModeHint = document.getElementById("sub-mode-hint");
+const subModeButtons = document.getElementById("sub-mode-buttons");
 const mainModeButtons = document.getElementById("main-mode-buttons");
 const gameBoards = document.getElementById("game-boards");
 const gameModeLabel = document.getElementById("game-mode-label");
 const gameTimer = document.getElementById("game-timer");
 const resultList = document.getElementById("result-list");
+
+const MODE_NAMES = {
+  [SUB_MODE.TIME_ATTACK]: "タイムアタック",
+  [SUB_MODE.BATTLE]: "対戦モード",
+  [SUB_MODE.SUDDEN_DEATH]: "サドンデス",
+};
+
+/** @param {number} playerCount */
+function getSubModesForPlayers(playerCount) {
+  const modes = [{ id: SUB_MODE.TIME_ATTACK, label: "タイムアタック" }];
+  if (playerCount >= 2) {
+    modes.push({ id: SUB_MODE.BATTLE, label: "対戦モード" });
+  }
+  if (playerCount <= 3) {
+    modes.push({ id: SUB_MODE.SUDDEN_DEATH, label: "サドンデス" });
+  }
+  return modes;
+}
 
 let selectedPlayers = 1;
 let selectedSubMode = SUB_MODE.TIME_ATTACK;
@@ -32,6 +51,32 @@ function formatTime(sec) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+function renderSubModeButtons(playerCount) {
+  subModeButtons.innerHTML = "";
+  for (const mode of getSubModesForPlayers(playerCount)) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn sub-mode-btn";
+    btn.dataset.subMode = mode.id;
+    btn.textContent = mode.label;
+    btn.addEventListener("click", () => {
+      selectedSubMode = mode.id;
+      startGame(selectedPlayers, selectedSubMode);
+      resetTitleSubMode();
+    });
+    subModeButtons.appendChild(btn);
+  }
+}
+
+function showSubModeSelection(playerCount) {
+  subModeHint.textContent = `${playerCount}人プレイのサブモードを選んでください`;
+  renderSubModeButtons(playerCount);
+  subModeSection.classList.remove("hidden");
+  document
+    .querySelector("#screen-title .mode-section:first-of-type")
+    .classList.add("hidden");
+}
+
 function startGame(playerCount, subMode) {
   if (session) {
     session.unmount();
@@ -40,11 +85,7 @@ function startGame(playerCount, subMode) {
   clearInterval(timerInterval);
   document.getElementById("time-up-overlay")?.classList.remove("active");
 
-  const modeNames = {
-    [SUB_MODE.TIME_ATTACK]: "タイムアタック",
-    [SUB_MODE.BATTLE]: "対戦モード",
-  };
-  gameModeLabel.textContent = `${playerCount}人プレイ / ${modeNames[subMode]}`;
+  gameModeLabel.textContent = `${playerCount}人プレイ / ${MODE_NAMES[subMode]}`;
 
   const limitSec =
     subMode === SUB_MODE.TIME_ATTACK
@@ -107,31 +148,16 @@ mainModeButtons.addEventListener("click", (e) => {
   const btn = e.target.closest(".mode-btn");
   if (!btn) return;
   selectedPlayers = parseInt(btn.dataset.players, 10);
-
-  if (selectedPlayers === 1) {
-    selectedSubMode = SUB_MODE.TIME_ATTACK;
-    startGame(1, SUB_MODE.TIME_ATTACK);
-    return;
-  }
-
-  subModeHint.textContent = `${selectedPlayers}人プレイのサブモードを選んでください`;
-  subModeSection.classList.remove("hidden");
-  document.querySelector("#screen-title .mode-section:first-of-type").classList.add("hidden");
-});
-
-document.querySelectorAll(".sub-mode-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    selectedSubMode = btn.dataset.subMode;
-    startGame(selectedPlayers, selectedSubMode);
-    resetTitleSubMode();
-  });
+  showSubModeSelection(selectedPlayers);
 });
 
 document.getElementById("back-to-main").addEventListener("click", resetTitleSubMode);
 
 function resetTitleSubMode() {
   subModeSection.classList.add("hidden");
-  document.querySelector("#screen-title .mode-section:first-of-type").classList.remove("hidden");
+  document
+    .querySelector("#screen-title .mode-section:first-of-type")
+    .classList.remove("hidden");
 }
 
 document.getElementById("btn-back-title").addEventListener("click", () => {
