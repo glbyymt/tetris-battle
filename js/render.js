@@ -72,6 +72,55 @@ export function computeMobileCellSizes() {
   return { cellSize, nextCellSize };
 }
 
+export const FOUR_PLAYER_MIN_CELL_SIZE = 12;
+export const FOUR_PLAYER_MAX_CELL_SIZE = 24;
+
+/** 4人プレイ時、横一列に収まるセルサイズを算出 */
+export function computeFourPlayerCellSizes() {
+  const viewportW = window.visualViewport?.width ?? window.innerWidth;
+  const viewportH = window.visualViewport?.height ?? window.innerHeight;
+
+  const screen = document.getElementById("screen-game");
+  const header = screen?.querySelector(".game-header");
+  const hint = document.getElementById("controls-hint-desktop");
+  const app = document.getElementById("app");
+
+  const appStyle = app ? getComputedStyle(app) : null;
+  const appPadH = appStyle
+    ? parseFloat(appStyle.paddingLeft) + parseFloat(appStyle.paddingRight)
+    : 32;
+  const appPadV = appStyle
+    ? parseFloat(appStyle.paddingTop) + parseFloat(appStyle.paddingBottom)
+    : 16;
+
+  const reservedTop =
+    (header?.offsetHeight ?? 44) + appPadV + 12;
+  const reservedBottom =
+    (hint?.offsetHeight ?? 36) + appPadV + 12;
+  const panelChromeH = 52;
+
+  const boardAreaH = viewportH - reservedTop - reservedBottom - panelChromeH;
+  const cellByHeight = Math.floor(boardAreaH / ROWS);
+
+  const panelGap = 16;
+  const panelChromeW = 28;
+  const widthPerCell =
+    COLS + NEXT_COLS * NEXT_TO_MAIN_RATIO + 8 / CELL_SIZE;
+  const availableW = viewportW - appPadH - panelGap * 3 - panelChromeW * 4;
+  const cellByWidth = Math.floor(availableW / (4 * widthPerCell));
+
+  const cellSize = Math.max(
+    FOUR_PLAYER_MIN_CELL_SIZE,
+    Math.min(FOUR_PLAYER_MAX_CELL_SIZE, cellByHeight, cellByWidth)
+  );
+  const nextCellSize = Math.max(
+    8,
+    Math.round(cellSize * NEXT_TO_MAIN_RATIO)
+  );
+
+  return { cellSize, nextCellSize };
+}
+
 export function setupCanvas(canvas, cols, rows, cellSize) {
   canvas.width = cols * cellSize;
   canvas.height = rows * cellSize;

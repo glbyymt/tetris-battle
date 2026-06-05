@@ -28,6 +28,7 @@ import {
   NEXT_COLS,
   NEXT_ROWS,
   computeMobileCellSizes,
+  computeFourPlayerCellSizes,
 } from "./render.js";
 import { createInputManager } from "./input.js";
 import { startGameMusic, stopGameMusic } from "./audio.js";
@@ -38,6 +39,7 @@ export class GameSession {
     this.subMode = subMode;
     this.onEnd = onEnd;
     this.useTouchControls = useTouchControls && playerCount === 1;
+    this.useFourPlayerLayout = playerCount === 4 && !this.useTouchControls;
     this.players = Array.from({ length: playerCount }, (_, i) =>
       createPlayer(i)
     );
@@ -64,8 +66,15 @@ export class GameSession {
     return null;
   }
 
-  applyMobileCellSizes() {
-    const { cellSize, nextCellSize } = computeMobileCellSizes();
+  applyAdaptiveCellSizes() {
+    const sizes = this.useTouchControls
+      ? computeMobileCellSizes()
+      : this.useFourPlayerLayout
+        ? computeFourPlayerCellSizes()
+        : null;
+    if (!sizes) return;
+
+    const { cellSize, nextCellSize } = sizes;
     if (
       cellSize === this.cellSize &&
       nextCellSize === this.nextCellSize
@@ -91,12 +100,21 @@ export class GameSession {
     this.cellSize = CELL_SIZE;
     this.nextCellSize = NEXT_CELL_SIZE;
 
+    const screenGame = document.getElementById("screen-game");
+    if (this.useFourPlayerLayout) {
+      screenGame?.classList.add("players-4");
+    }
+
     const touchControlsEl = document.getElementById("touch-controls");
     if (this.useTouchControls) {
       touchControlsEl?.classList.remove("hidden");
       document.getElementById("controls-hint-desktop")?.classList.add("hidden");
       document.getElementById("controls-hint-touch")?.classList.add("hidden");
       const sizes = computeMobileCellSizes();
+      this.cellSize = sizes.cellSize;
+      this.nextCellSize = sizes.nextCellSize;
+    } else if (this.useFourPlayerLayout) {
+      const sizes = computeFourPlayerCellSizes();
       this.cellSize = sizes.cellSize;
       this.nextCellSize = sizes.nextCellSize;
     }
@@ -146,17 +164,18 @@ export class GameSession {
       spawnPiece(p);
     }
 
-    if (this.useTouchControls) {
+    if (this.useTouchControls || this.useFourPlayerLayout) {
       this._onViewportResize = () => {
         if (!this.running) return;
-        this.applyMobileCellSizes();
+        this.applyAdaptiveCellSizes();
         this.render();
       };
       window.visualViewport?.addEventListener("resize", this._onViewportResize);
       window.addEventListener("orientationchange", this._onViewportResize);
+      window.addEventListener("resize", this._onViewportResize);
       requestAnimationFrame(() => {
         if (!this.running) return;
-        this.applyMobileCellSizes();
+        this.applyAdaptiveCellSizes();
         this.render();
       });
     }
@@ -207,14 +226,18 @@ export class GameSession {
     if (this.useTouchControls) {
       document.getElementById("touch-controls")?.classList.add("hidden");
       document.getElementById("controls-hint-desktop")?.classList.remove("hidden");
-      if (this._onViewportResize) {
-        window.visualViewport?.removeEventListener(
-          "resize",
-          this._onViewportResize
-        );
-        window.removeEventListener("orientationchange", this._onViewportResize);
-        this._onViewportResize = null;
-      }
+    }
+    if (this.useFourPlayerLayout) {
+      document.getElementById("screen-game")?.classList.remove("players-4");
+    }
+    if (this._onViewportResize) {
+      window.visualViewport?.removeEventListener(
+        "resize",
+        this._onViewportResize
+      );
+      window.removeEventListener("orientationchange", this._onViewportResize);
+      window.removeEventListener("resize", this._onViewportResize);
+      this._onViewportResize = null;
     }
   }
 

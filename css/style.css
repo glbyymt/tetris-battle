@@ -308,6 +308,31 @@ body.is-mobile .controls-help-scroll {
   align-items: flex-start;
 }
 
+#screen-game.players-4 {
+  max-width: none;
+  width: 100%;
+}
+
+#screen-game.players-4 .game-boards {
+  flex-wrap: nowrap;
+  justify-content: center;
+  width: 100%;
+}
+
+#screen-game.players-4 .player-panel {
+  flex-shrink: 0;
+  padding: 0.5rem;
+}
+
+#screen-game.players-4 .player-label,
+#screen-game.players-4 .player-stats {
+  font-size: 0.75rem;
+}
+
+#screen-game.players-4 .controls-hint {
+  max-width: none;
+}
+
 .player-panel {
   background: var(--surface);
   border: 2px solid var(--border);
