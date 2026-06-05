@@ -130,6 +130,79 @@ body {
   padding: 0.5rem 1rem;
 }
 
+/* 操作方法 */
+#controls-help-section {
+  max-width: 520px;
+}
+
+.controls-help-scroll {
+  width: 100%;
+  max-height: min(55vh, 420px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.controls-help-block,
+.controls-help-player {
+  margin-bottom: 1.25rem;
+}
+
+.controls-help-block h3,
+.controls-help-player h3 {
+  font-size: 0.95rem;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.controls-help-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.controls-help-table th,
+.controls-help-table td {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.controls-help-table th {
+  color: var(--text-muted);
+  font-weight: 500;
+  width: 42%;
+}
+
+.controls-help-list {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.controls-help-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+
+.controls-help-footer-hint {
+  margin-top: 0.25rem;
+}
+
+body.is-mobile .controls-help-scroll {
+  max-height: min(50vh, 360px);
+}
+
 /* ゲーム画面 */
 .game-header {
   display: flex;

@@ -3,7 +3,7 @@
  * 左右は押し続けで連続移動（DAS/ARR）
  */
 
-const KEY_BINDINGS = [
+export const KEY_BINDINGS = [
   { left: "ArrowLeft", right: "ArrowRight", down: "ArrowDown", up: "ArrowUp", rotate: " " },
   { left: "a", right: "d", down: "s", up: "w", rotate: "q" },
   { left: "j", right: "l", down: "k", up: "i", rotate: "u" },

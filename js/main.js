@@ -3,6 +3,7 @@ import { SUB_MODE } from "./modes.js";
 import { TIME_ATTACK_LIMIT_SEC, BATTLE_LIMIT_SEC } from "./constants.js";
 import { isMobileDevice } from "./device.js";
 import { startFinishMusic, stopFinishMusic } from "./audio.js";
+import { createControlsHelp } from "./controls-help.js";
 
 const IS_MOBILE = isMobileDevice();
 
@@ -22,6 +23,17 @@ const gameTimer = document.getElementById("game-timer");
 const resultList = document.getElementById("result-list");
 const gameEndOverlay = document.getElementById("game-end-overlay");
 const gameEndTitle = document.getElementById("game-end-title");
+const titleMainSection = document.getElementById("title-main-section");
+const controlsHelpSection = document.getElementById("controls-help-section");
+const controlsHelpScroll = document.getElementById("controls-help-scroll");
+const controlsHelpContent = document.getElementById("controls-help-content");
+
+const controlsHelp = createControlsHelp({
+  scrollEl: controlsHelpScroll,
+  contentEl: controlsHelpContent,
+  isMobile: IS_MOBILE,
+  onBack: hideControlsHelp,
+});
 
 const MODE_NAMES = {
   [SUB_MODE.TIME_ATTACK]: "タイムアタック",
@@ -102,13 +114,25 @@ function renderSubModeButtons(playerCount) {
   }
 }
 
+function showControlsHelp() {
+  titleMainSection?.classList.add("hidden");
+  subModeSection.classList.add("hidden");
+  controlsHelpSection?.classList.remove("hidden");
+  controlsHelp.show();
+}
+
+function hideControlsHelp() {
+  controlsHelp.hide();
+  controlsHelpSection?.classList.add("hidden");
+  titleMainSection?.classList.remove("hidden");
+}
+
 function showSubModeSelection(playerCount) {
+  hideControlsHelp();
   subModeHint.textContent = `${playerCount}人プレイのサブモードを選んでください`;
   renderSubModeButtons(playerCount);
   subModeSection.classList.remove("hidden");
-  document
-    .querySelector("#screen-title .mode-section:first-of-type")
-    .classList.add("hidden");
+  titleMainSection?.classList.add("hidden");
 }
 
 function startGame(playerCount, subMode) {
@@ -249,11 +273,13 @@ mainModeButtons.addEventListener("click", (e) => {
 document.getElementById("back-to-main").addEventListener("click", resetTitleSubMode);
 
 function resetTitleSubMode() {
+  hideControlsHelp();
   subModeSection.classList.add("hidden");
-  document
-    .querySelector("#screen-title .mode-section:first-of-type")
-    .classList.remove("hidden");
+  titleMainSection?.classList.remove("hidden");
 }
+
+document.getElementById("btn-show-controls")?.addEventListener("click", showControlsHelp);
+document.getElementById("back-from-controls")?.addEventListener("click", hideControlsHelp);
 
 document.getElementById("btn-back-title").addEventListener("click", () => {
   hideGameEndOverlay();

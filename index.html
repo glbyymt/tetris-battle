@@ -14,7 +14,7 @@
       <p class="subtitle">モードを選択してください</p>
       <p class="hint hidden" id="mobile-mode-hint">スマホでは1人用のみプレイできます</p>
 
-      <div class="mode-section">
+      <div class="mode-section" id="title-main-section">
         <h2>メインモード</h2>
         <div class="btn-group" id="main-mode-buttons">
           <button type="button" class="btn mode-btn" data-players="1">1人用</button>
@@ -22,6 +22,16 @@
           <button type="button" class="btn mode-btn" data-players="3">3人対戦</button>
           <button type="button" class="btn mode-btn" data-players="4">4人対戦</button>
         </div>
+        <button type="button" class="btn" id="btn-show-controls">操作方法</button>
+      </div>
+
+      <div class="mode-section hidden" id="controls-help-section">
+        <h2>操作方法</h2>
+        <div class="controls-help-scroll" id="controls-help-scroll">
+          <div id="controls-help-content"></div>
+        </div>
+        <p class="hint controls-help-footer-hint">↑↓ でスクロール　その他のキー・ボタンで戻る</p>
+        <button type="button" class="btn btn-back" id="back-from-controls">戻る</button>
       </div>
 
       <div class="mode-section hidden" id="sub-mode-section">
