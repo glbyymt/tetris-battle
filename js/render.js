@@ -19,6 +19,59 @@ export const NEXT_CELL_SIZE = 16;
 export const NEXT_COLS = 4;
 export const NEXT_ROWS = 4;
 
+export const MOBILE_MIN_CELL_SIZE = 10;
+export const MOBILE_MAX_CELL_SIZE = 24;
+
+const NEXT_TO_MAIN_RATIO = NEXT_CELL_SIZE / CELL_SIZE;
+
+/**
+ * スマホ画面内に盤面＋NEXT＋操作UIが収まるセルサイズを算出
+ * @returns {{ cellSize: number, nextCellSize: number }}
+ */
+export function computeMobileCellSizes() {
+  const viewportW = window.visualViewport?.width ?? window.innerWidth;
+  const viewportH = window.visualViewport?.height ?? window.innerHeight;
+
+  const screen = document.getElementById("screen-game");
+  const header = screen?.querySelector(".game-header");
+  const touch = document.getElementById("touch-controls");
+  const app = document.getElementById("app");
+
+  const appStyle = app ? getComputedStyle(app) : null;
+  const appPadV = appStyle
+    ? parseFloat(appStyle.paddingTop) + parseFloat(appStyle.paddingBottom)
+    : 16;
+  const screenGap =
+    screen && getComputedStyle(screen).gap !== "normal"
+      ? parseFloat(getComputedStyle(screen).gap) || 8
+      : 8;
+
+  const reservedTop = (header?.offsetHeight ?? 44) + appPadV + screenGap;
+  const reservedBottom =
+    (touch?.offsetHeight ?? 130) + appPadV + screenGap;
+
+  /** ラベル・スコア表示・パネル余白（盤面以外） */
+  const panelChrome = 52;
+
+  const boardAreaH = viewportH - reservedTop - reservedBottom - panelChrome;
+  const boardAreaW = viewportW - 32;
+
+  const cellByHeight = Math.floor(boardAreaH / ROWS);
+  const widthFactor = COLS + NEXT_COLS * NEXT_TO_MAIN_RATIO;
+  const cellByWidth = Math.floor((boardAreaW - 8) / widthFactor);
+
+  const cellSize = Math.max(
+    MOBILE_MIN_CELL_SIZE,
+    Math.min(MOBILE_MAX_CELL_SIZE, cellByHeight, cellByWidth)
+  );
+  const nextCellSize = Math.max(
+    8,
+    Math.round(cellSize * NEXT_TO_MAIN_RATIO)
+  );
+
+  return { cellSize, nextCellSize };
+}
+
 export function setupCanvas(canvas, cols, rows, cellSize) {
   canvas.width = cols * cellSize;
   canvas.height = rows * cellSize;

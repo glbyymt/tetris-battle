@@ -299,16 +299,31 @@ body.is-mobile #app {
 
 body.is-mobile #screen-game.active {
   min-height: 100dvh;
-  justify-content: space-between;
-  gap: 0.5rem;
+  max-height: 100dvh;
+  height: 100dvh;
+  justify-content: flex-start;
+  gap: 0.35rem;
   touch-action: none;
   overscroll-behavior: none;
+  overflow: hidden;
+}
+
+body.is-mobile .game-header {
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  gap: 1rem;
 }
 
 body.is-mobile .game-boards-area {
   flex: 1;
   min-height: 0;
   align-items: center;
+  overflow: hidden;
+}
+
+body.is-mobile .touch-controls {
+  flex-shrink: 0;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
 body.is-mobile .player-panel {

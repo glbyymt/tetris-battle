@@ -19,7 +19,17 @@ import {
   tickLineClearAnim,
   isInputLocked,
 } from "./player.js";
-import { drawBoard, drawNext, setupCanvas, CELL_SIZE, NEXT_CELL_SIZE } from "./render.js";
+import { COLS, ROWS } from "./constants.js";
+import {
+  drawBoard,
+  drawNext,
+  setupCanvas,
+  CELL_SIZE,
+  NEXT_CELL_SIZE,
+  NEXT_COLS,
+  NEXT_ROWS,
+  computeMobileCellSizes,
+} from "./render.js";
 import { createInputManager } from "./input.js";
 
 export class GameSession {
@@ -40,6 +50,9 @@ export class GameSession {
     this.lastTs = 0;
     this.input = null;
     this.dom = {};
+    this.cellSize = CELL_SIZE;
+    this.nextCellSize = NEXT_CELL_SIZE;
+    this._onViewportResize = null;
   }
 
   getTimeLimitMs(subMode) {
@@ -52,12 +65,42 @@ export class GameSession {
     return null;
   }
 
+  applyMobileCellSizes() {
+    const { cellSize, nextCellSize } = computeMobileCellSizes();
+    if (
+      cellSize === this.cellSize &&
+      nextCellSize === this.nextCellSize
+    ) {
+      return;
+    }
+    this.cellSize = cellSize;
+    this.nextCellSize = nextCellSize;
+    for (let i = 0; i < this.playerCount; i++) {
+      const { canvas } = this.dom.canvases[i];
+      setupCanvas(canvas, COLS, ROWS, this.cellSize);
+      const { canvas: nextCanvas } = this.dom.nextCanvases[i];
+      setupCanvas(nextCanvas, NEXT_COLS, NEXT_ROWS, this.nextCellSize);
+    }
+  }
+
   mount(container) {
     container.innerHTML = "";
     this.dom.panels = [];
     this.dom.canvases = [];
     this.dom.nextCanvases = [];
     this.dom.stats = [];
+    this.cellSize = CELL_SIZE;
+    this.nextCellSize = NEXT_CELL_SIZE;
+
+    const touchControlsEl = document.getElementById("touch-controls");
+    if (this.useTouchControls) {
+      touchControlsEl?.classList.remove("hidden");
+      document.getElementById("controls-hint-desktop")?.classList.add("hidden");
+      document.getElementById("controls-hint-touch")?.classList.add("hidden");
+      const sizes = computeMobileCellSizes();
+      this.cellSize = sizes.cellSize;
+      this.nextCellSize = sizes.nextCellSize;
+    }
 
     for (let i = 0; i < this.playerCount; i++) {
       const panel = document.createElement("div");
@@ -77,7 +120,7 @@ export class GameSession {
 
       const main = document.createElement("canvas");
       main.className = "canvas-main";
-      const mainCtx = setupCanvas(main, 12, 24, CELL_SIZE);
+      const mainCtx = setupCanvas(main, COLS, ROWS, this.cellSize);
 
       const nextWrap = document.createElement("div");
       const nextLabel = document.createElement("div");
@@ -85,7 +128,7 @@ export class GameSession {
       nextLabel.textContent = "NEXT";
       const next = document.createElement("canvas");
       next.className = "canvas-next";
-      const nextCtx = setupCanvas(next, 4, 4, NEXT_CELL_SIZE);
+      const nextCtx = setupCanvas(next, NEXT_COLS, NEXT_ROWS, this.nextCellSize);
       nextWrap.append(nextLabel, next);
 
       wrap.append(main, nextWrap);
@@ -104,11 +147,19 @@ export class GameSession {
       spawnPiece(p);
     }
 
-    const touchControlsEl = document.getElementById("touch-controls");
     if (this.useTouchControls) {
-      touchControlsEl?.classList.remove("hidden");
-      document.getElementById("controls-hint-desktop")?.classList.add("hidden");
-      document.getElementById("controls-hint-touch")?.classList.remove("hidden");
+      this._onViewportResize = () => {
+        if (!this.running) return;
+        this.applyMobileCellSizes();
+        this.render();
+      };
+      window.visualViewport?.addEventListener("resize", this._onViewportResize);
+      window.addEventListener("orientationchange", this._onViewportResize);
+      requestAnimationFrame(() => {
+        if (!this.running) return;
+        this.applyMobileCellSizes();
+        this.render();
+      });
     }
 
     this.input = createInputManager(this.playerCount, this.createInputCallbacks(), {
@@ -155,7 +206,14 @@ export class GameSession {
     if (this.useTouchControls) {
       document.getElementById("touch-controls")?.classList.add("hidden");
       document.getElementById("controls-hint-desktop")?.classList.remove("hidden");
-      document.getElementById("controls-hint-touch")?.classList.add("hidden");
+      if (this._onViewportResize) {
+        window.visualViewport?.removeEventListener(
+          "resize",
+          this._onViewportResize
+        );
+        window.removeEventListener("orientationchange", this._onViewportResize);
+        this._onViewportResize = null;
+      }
     }
   }
 
@@ -263,8 +321,8 @@ export class GameSession {
       const p = this.players[i];
       const { ctx } = this.dom.canvases[i];
       const { ctx: nextCtx } = this.dom.nextCanvases[i];
-      drawBoard(ctx, p.board, p, CELL_SIZE);
-      drawNext(nextCtx, p.nextType, NEXT_CELL_SIZE);
+      drawBoard(ctx, p.board, p, this.cellSize);
+      drawNext(nextCtx, p.nextType, this.nextCellSize);
 
       const panel = this.dom.panels[i];
       panel.classList.toggle("game-over", p.gameOver);
