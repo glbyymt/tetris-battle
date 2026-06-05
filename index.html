@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>テトリスバトル</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -12,6 +12,7 @@
     <section id="screen-title" class="screen active">
       <h1 class="title-logo">テトリスバトル</h1>
       <p class="subtitle">モードを選択してください</p>
+      <p class="hint hidden" id="mobile-mode-hint">スマホでは1人用のみプレイできます</p>
 
       <div class="mode-section">
         <h2>メインモード</h2>
@@ -41,8 +42,22 @@
         <div id="time-up-overlay" class="time-up-overlay">TIME UP</div>
         <div id="game-boards" class="game-boards"></div>
       </div>
-      <div class="controls-hint">
+      <div id="touch-controls" class="touch-controls hidden" aria-label="ゲーム操作">
+        <div class="touch-controls-row">
+          <button type="button" class="touch-btn" data-touch-action="left" aria-label="左">◀</button>
+          <button type="button" class="touch-btn" data-touch-action="down" aria-label="高速落下">▼</button>
+          <button type="button" class="touch-btn" data-touch-action="right" aria-label="右">▶</button>
+        </div>
+        <div class="touch-controls-row">
+          <button type="button" class="touch-btn touch-btn-wide" data-touch-action="rotate" aria-label="回転">回転</button>
+          <button type="button" class="touch-btn touch-btn-wide" data-touch-action="hard-drop" aria-label="ハードドロップ">一括落下</button>
+        </div>
+      </div>
+      <div class="controls-hint" id="controls-hint-desktop">
         <p>操作：左右移動（押し続けで連続）／下で高速落下／上でハードドロップ／スペースで回転（ゲームパッド対応）</p>
+      </div>
+      <div class="controls-hint hidden" id="controls-hint-touch">
+        <p>画面下のボタンで操作します（左右・高速落下は押し続け可）</p>
       </div>
     </section>
 

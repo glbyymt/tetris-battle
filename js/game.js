@@ -23,10 +23,11 @@ import { drawBoard, drawNext, setupCanvas, CELL_SIZE, NEXT_CELL_SIZE } from "./r
 import { createInputManager } from "./input.js";
 
 export class GameSession {
-  constructor({ playerCount, subMode, onEnd }) {
+  constructor({ playerCount, subMode, onEnd, useTouchControls = false }) {
     this.playerCount = playerCount;
     this.subMode = subMode;
     this.onEnd = onEnd;
+    this.useTouchControls = useTouchControls && playerCount === 1;
     this.players = Array.from({ length: playerCount }, (_, i) =>
       createPlayer(i)
     );
@@ -103,10 +104,16 @@ export class GameSession {
       spawnPiece(p);
     }
 
-    this.input = createInputManager(
-      this.playerCount,
-      this.createInputCallbacks()
-    );
+    const touchControlsEl = document.getElementById("touch-controls");
+    if (this.useTouchControls) {
+      touchControlsEl?.classList.remove("hidden");
+      document.getElementById("controls-hint-desktop")?.classList.add("hidden");
+      document.getElementById("controls-hint-touch")?.classList.remove("hidden");
+    }
+
+    this.input = createInputManager(this.playerCount, this.createInputCallbacks(), {
+      touchControlsEl: this.useTouchControls ? touchControlsEl : null,
+    });
     this.running = true;
     this.phase = "playing";
     this.timeUpElapsed = 0;
@@ -145,6 +152,11 @@ export class GameSession {
     if (this.rafId) cancelAnimationFrame(this.rafId);
     this.input?.destroy();
     this.hideTimeUpOverlay();
+    if (this.useTouchControls) {
+      document.getElementById("touch-controls")?.classList.add("hidden");
+      document.getElementById("controls-hint-desktop")?.classList.remove("hidden");
+      document.getElementById("controls-hint-touch")?.classList.add("hidden");
+    }
   }
 
   showTimeUpOverlay() {

@@ -14,7 +14,113 @@ const DAS_DELAY_MS = 170;
 const ARR_INTERVAL_MS = 50;
 const SOFT_DROP_MS = 50;
 
-export function createInputManager(playerCount, callbacks) {
+function pressLeft(playerIndex, held, callbacks) {
+  const s = held[playerIndex];
+  if (!s.left) {
+    s.left = true;
+    s.dasLeft = 0;
+    s.arrLeft = 0;
+    callbacks.onMove(playerIndex, -1, 0);
+  }
+}
+
+function pressRight(playerIndex, held, callbacks) {
+  const s = held[playerIndex];
+  if (!s.right) {
+    s.right = true;
+    s.dasRight = 0;
+    s.arrRight = 0;
+    callbacks.onMove(playerIndex, 1, 0);
+  }
+}
+
+function releaseLeft(playerIndex, held) {
+  const s = held[playerIndex];
+  s.left = false;
+  s.dasLeft = 0;
+  s.arrLeft = 0;
+}
+
+function releaseRight(playerIndex, held) {
+  const s = held[playerIndex];
+  s.right = false;
+  s.dasRight = 0;
+  s.arrRight = 0;
+}
+
+function bindTouchControls(root, playerIndex, held, callbacks) {
+  const cleanups = [];
+
+  function bindHold(btn, onPress, onRelease) {
+    const down = (e) => {
+      e.preventDefault();
+      btn.setPointerCapture(e.pointerId);
+      onPress();
+    };
+    const up = () => onRelease();
+    btn.addEventListener("pointerdown", down);
+    btn.addEventListener("pointerup", up);
+    btn.addEventListener("pointercancel", up);
+    btn.addEventListener("lostpointercapture", up);
+    cleanups.push(() => {
+      btn.removeEventListener("pointerdown", down);
+      btn.removeEventListener("pointerup", up);
+      btn.removeEventListener("pointercancel", up);
+      btn.removeEventListener("lostpointercapture", up);
+    });
+  }
+
+  function bindTap(btn, action) {
+    const down = (e) => {
+      e.preventDefault();
+      action();
+    };
+    btn.addEventListener("pointerdown", down);
+    cleanups.push(() => btn.removeEventListener("pointerdown", down));
+  }
+
+  root.querySelectorAll("[data-touch-action]").forEach((btn) => {
+    const action = btn.dataset.touchAction;
+    if (action === "left") {
+      bindHold(
+        btn,
+        () => pressLeft(playerIndex, held, callbacks),
+        () => releaseLeft(playerIndex, held)
+      );
+    } else if (action === "right") {
+      bindHold(
+        btn,
+        () => pressRight(playerIndex, held, callbacks),
+        () => releaseRight(playerIndex, held)
+      );
+    } else if (action === "down") {
+      bindHold(
+        btn,
+        () => {
+          held[playerIndex].down = true;
+        },
+        () => {
+          held[playerIndex].down = false;
+          held[playerIndex].softDropTimer = 0;
+        }
+      );
+    } else if (action === "rotate") {
+      bindTap(btn, () => callbacks.onRotate(playerIndex));
+    } else if (action === "hard-drop") {
+      bindTap(btn, () => callbacks.onHardDrop(playerIndex));
+    }
+  });
+
+  return () => {
+    releaseLeft(playerIndex, held);
+    releaseRight(playerIndex, held);
+    held[playerIndex].down = false;
+    held[playerIndex].softDropTimer = 0;
+    for (const fn of cleanups) fn();
+  };
+}
+
+export function createInputManager(playerCount, callbacks, options = {}) {
   const held = Array.from({ length: playerCount }, () => ({
     left: false,
     right: false,
@@ -27,8 +133,6 @@ export function createInputManager(playerCount, callbacks) {
     arrRight: 0,
     softDropTimer: 0,
     hardDropConsumed: false,
-    movedOnceLeft: false,
-    movedOnceRight: false,
   }));
 
   function matchBinding(key, field) {
@@ -53,30 +157,10 @@ export function createInputManager(playerCount, callbacks) {
     const k = key.length === 1 ? key.toLowerCase() : key;
 
     const piLeft = matchBinding(k, "left");
-    if (piLeft >= 0) {
-      const s = held[piLeft];
-      if (!s.left) {
-        s.left = true;
-        s.dasLeft = 0;
-        s.arrLeft = 0;
-        s.movedOnceLeft = false;
-        callbacks.onMove(piLeft, -1, 0);
-        s.movedOnceLeft = true;
-      }
-    }
+    if (piLeft >= 0) pressLeft(piLeft, held, callbacks);
 
     const piRight = matchBinding(k, "right");
-    if (piRight >= 0) {
-      const s = held[piRight];
-      if (!s.right) {
-        s.right = true;
-        s.dasRight = 0;
-        s.arrRight = 0;
-        s.movedOnceRight = false;
-        callbacks.onMove(piRight, 1, 0);
-        s.movedOnceRight = true;
-      }
-    }
+    if (piRight >= 0) pressRight(piRight, held, callbacks);
 
     const piDown = matchBinding(k, "down");
     if (piDown >= 0) held[piDown].down = true;
@@ -101,17 +185,9 @@ export function createInputManager(playerCount, callbacks) {
     const k = key.length === 1 ? key.toLowerCase() : key;
 
     const piLeft = matchBinding(k, "left");
-    if (piLeft >= 0) {
-      held[piLeft].left = false;
-      held[piLeft].dasLeft = 0;
-      held[piLeft].arrLeft = 0;
-    }
+    if (piLeft >= 0) releaseLeft(piLeft, held);
     const piRight = matchBinding(k, "right");
-    if (piRight >= 0) {
-      held[piRight].right = false;
-      held[piRight].dasRight = 0;
-      held[piRight].arrRight = 0;
-    }
+    if (piRight >= 0) releaseRight(piRight, held);
     const piDown = matchBinding(k, "down");
     if (piDown >= 0) held[piDown].down = false;
     const piRot = matchBinding(key === " " ? " " : k, "rotate");
@@ -217,11 +293,18 @@ export function createInputManager(playerCount, callbacks) {
   window.addEventListener("keydown", handleKeyDown);
   window.addEventListener("keyup", handleKeyUp);
 
+  const touchRoot = options.touchControlsEl;
+  const unbindTouch =
+    touchRoot && playerCount >= 1
+      ? bindTouchControls(touchRoot, 0, held, callbacks)
+      : null;
+
   return {
     update,
     destroy() {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      unbindTouch?.();
     },
   };
 }

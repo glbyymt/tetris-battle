@@ -1,6 +1,9 @@
 import { GameSession } from "./game.js";
 import { SUB_MODE } from "./modes.js";
 import { TIME_ATTACK_LIMIT_SEC, BATTLE_LIMIT_SEC } from "./constants.js";
+import { isMobileDevice } from "./device.js";
+
+const IS_MOBILE = isMobileDevice();
 
 const screens = {
   title: document.getElementById("screen-title"),
@@ -26,7 +29,7 @@ const MODE_NAMES = {
 /** @param {number} playerCount */
 function getSubModesForPlayers(playerCount) {
   const modes = [{ id: SUB_MODE.TIME_ATTACK, label: "タイムアタック" }];
-  if (playerCount >= 2) {
+  if (!IS_MOBILE && playerCount >= 2) {
     modes.push({ id: SUB_MODE.BATTLE, label: "対戦モード" });
   }
   if (playerCount <= 3) {
@@ -39,6 +42,18 @@ let selectedPlayers = 1;
 let selectedSubMode = SUB_MODE.TIME_ATTACK;
 let session = null;
 let timerInterval = null;
+
+function setupMobileUi() {
+  if (!IS_MOBILE) return;
+  document.body.classList.add("is-mobile");
+  document.querySelectorAll(".mode-btn[data-players]:not([data-players='1'])").forEach((btn) => {
+    btn.classList.add("hidden");
+  });
+  const mobileHint = document.getElementById("mobile-mode-hint");
+  if (mobileHint) mobileHint.classList.remove("hidden");
+}
+
+setupMobileUi();
 
 function showScreen(name) {
   Object.values(screens).forEach((el) => el.classList.remove("active"));
@@ -107,6 +122,7 @@ function startGame(playerCount, subMode) {
     playerCount,
     subMode,
     onEnd: showResults,
+    useTouchControls: IS_MOBILE,
   });
   session.mount(gameBoards);
 
@@ -147,6 +163,7 @@ function showResults(results) {
 mainModeButtons.addEventListener("click", (e) => {
   const btn = e.target.closest(".mode-btn");
   if (!btn) return;
+  if (IS_MOBILE && btn.dataset.players !== "1") return;
   selectedPlayers = parseInt(btn.dataset.players, 10);
   showSubModeSelection(selectedPlayers);
 });
