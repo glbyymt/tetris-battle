@@ -23,6 +23,9 @@ export const MIN_DROP_MS = 80;
 /** 初期落下間隔（ミリ秒） */
 export const INITIAL_DROP_MS = 1000;
 
+/** 着地後、ブロックを固定するまでの猶予（ミリ秒） */
+export const LOCK_DELAY_MS = 200;
+
 /** 落下速度が上がる間隔（ミリ秒ごとに短縮） */
 export const SPEED_UP_INTERVAL_MS = 15000;
 export const SPEED_UP_AMOUNT_MS = 80;

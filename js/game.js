@@ -2,6 +2,7 @@ import {
   TIME_ATTACK_LIMIT_SEC,
   BATTLE_LIMIT_SEC,
   TIME_UP_DISPLAY_MS,
+  LOCK_DELAY_MS,
 } from "./constants.js";
 import { SUB_MODE, applyLineClear } from "./modes.js";
 import {
@@ -10,6 +11,8 @@ import {
   tryMove,
   tryRotate,
   softDrop,
+  hardDrop,
+  canMoveDown,
   lockCurrentPiece,
   updateDropSpeed,
   finishLineClearAnim,
@@ -129,6 +132,11 @@ export class GameSession {
         if (!p || isInputLocked(p)) return;
         tryRotate(p);
       },
+      onHardDrop(i) {
+        const p = self.players[i];
+        if (!p || isInputLocked(p)) return;
+        hardDrop(p);
+      },
     };
   }
 
@@ -218,10 +226,17 @@ export class GameSession {
 
       if (!p.current) continue;
 
-      p.dropTimer += dt;
-      if (p.dropTimer >= p.dropInterval) {
-        p.dropTimer = 0;
-        if (!softDrop(p)) {
+      if (canMoveDown(p)) {
+        p.lockDelay = 0;
+        p.dropTimer += dt;
+        if (p.dropTimer >= p.dropInterval) {
+          p.dropTimer = 0;
+          softDrop(p);
+        }
+      } else {
+        p.lockDelay += dt;
+        if (p.lockDelay >= LOCK_DELAY_MS) {
+          p.lockDelay = 0;
           const lockResult = lockCurrentPiece(p);
           if (lockResult.pendingLineClear) continue;
           applyLineClear(p, lockResult.clearedLines, this.subMode, this.players);

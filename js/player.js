@@ -5,6 +5,7 @@ import {
   SPEED_UP_AMOUNT_MS,
   LINE_CLEAR_ANIM_MS,
   LINE_CLEAR_BLINK_MS,
+  LOCK_DELAY_MS,
 } from "./constants.js";
 import {
   createBoard,
@@ -46,6 +47,7 @@ export function spawnPiece(player) {
   player.rotation = 0;
   player.x = spawn.x;
   player.y = spawn.y;
+  player.lockDelay = 0;
 
   const blocks = getBlocks(type, 0);
   if (isBlockedAtSpawn(player.board, blocks, player.x, player.y)) {
@@ -65,12 +67,19 @@ export function isInputLocked(player) {
   return player.gameOver || player.lineClearAnim != null;
 }
 
+export function canMoveDown(player) {
+  if (!player.current) return false;
+  const blocks = getCurrentBlocks(player);
+  return !collides(player.board, blocks, player.x, player.y + 1);
+}
+
 export function tryMove(player, dx, dy) {
   if (isInputLocked(player) || !player.current) return false;
   const blocks = getCurrentBlocks(player);
   if (!collides(player.board, blocks, player.x + dx, player.y + dy)) {
     player.x += dx;
     player.y += dy;
+    player.lockDelay = 0;
     return true;
   }
   return false;
@@ -86,6 +95,7 @@ export function tryRotate(player) {
     if (!collides(player.board, blocks, player.x + kick, player.y)) {
       player.rotation = newRot;
       player.x += kick;
+      player.lockDelay = 0;
       return true;
     }
   }
@@ -94,6 +104,17 @@ export function tryRotate(player) {
 
 export function softDrop(player) {
   return tryMove(player, 0, 1);
+}
+
+export function hardDrop(player) {
+  if (isInputLocked(player) || !player.current) return false;
+  const blocks = getCurrentBlocks(player);
+  const ghostY = getGhostY(player.board, blocks, player.x, player.y);
+  if (ghostY === player.y) return false;
+  player.y = ghostY;
+  player.dropTimer = 0;
+  player.lockDelay = 0;
+  return true;
 }
 
 export function lockCurrentPiece(player) {

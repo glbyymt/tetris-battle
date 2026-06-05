@@ -4,10 +4,10 @@
  */
 
 const KEY_BINDINGS = [
-  { left: "ArrowLeft", right: "ArrowRight", down: "ArrowDown", rotate: " " },
-  { left: "a", right: "d", down: "s", rotate: "q" },
-  { left: "j", right: "l", down: "k", rotate: "u" },
-  { left: "f", right: "h", down: "g", rotate: "r" },
+  { left: "ArrowLeft", right: "ArrowRight", down: "ArrowDown", up: "ArrowUp", rotate: " " },
+  { left: "a", right: "d", down: "s", up: "w", rotate: "q" },
+  { left: "j", right: "l", down: "k", up: "i", rotate: "u" },
+  { left: "f", right: "h", down: "g", up: "t", rotate: "r" },
 ];
 
 const DAS_DELAY_MS = 170;
@@ -26,6 +26,7 @@ export function createInputManager(playerCount, callbacks) {
     arrLeft: 0,
     arrRight: 0,
     softDropTimer: 0,
+    hardDropConsumed: false,
     movedOnceLeft: false,
     movedOnceRight: false,
   }));
@@ -46,7 +47,7 @@ export function createInputManager(playerCount, callbacks) {
   function handleKeyDown(e) {
     if (e.repeat) return;
     const key = e.key;
-    if ([" ", "ArrowLeft", "ArrowRight", "ArrowDown"].includes(key)) {
+    if ([" ", "ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp"].includes(key)) {
       e.preventDefault();
     }
     const k = key.length === 1 ? key.toLowerCase() : key;
@@ -79,6 +80,9 @@ export function createInputManager(playerCount, callbacks) {
 
     const piDown = matchBinding(k, "down");
     if (piDown >= 0) held[piDown].down = true;
+
+    const piUp = matchBinding(k, "up");
+    if (piUp >= 0) callbacks.onHardDrop(piUp);
 
     const piRot = matchBinding(key === " " ? " " : k, "rotate");
     if (piRot >= 0) {
@@ -125,6 +129,16 @@ export function createInputManager(playerCount, callbacks) {
     const dpadLeft = pad.buttons[14]?.pressed;
     const dpadRight = pad.buttons[15]?.pressed;
     const dpadDown = pad.buttons[13]?.pressed;
+    const dpadUp = pad.buttons[12]?.pressed;
+
+    if (axisY < -0.5 || dpadUp) {
+      if (!state.hardDropConsumed) {
+        callbacks.onHardDrop(playerIndex);
+        state.hardDropConsumed = true;
+      }
+    } else {
+      state.hardDropConsumed = false;
+    }
 
     if (axisX < -0.5 || dpadLeft) {
       if (!state.left) {
