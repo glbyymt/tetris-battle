@@ -2,6 +2,7 @@ import { GameSession } from "./game.js";
 import { SUB_MODE } from "./modes.js";
 import { TIME_ATTACK_LIMIT_SEC, BATTLE_LIMIT_SEC } from "./constants.js";
 import { isMobileDevice } from "./device.js";
+import { startFinishMusic, stopFinishMusic } from "./audio.js";
 
 const IS_MOBILE = isMobileDevice();
 
@@ -73,6 +74,7 @@ function formatTime(sec) {
 }
 
 function hideGameEndOverlay() {
+  stopFinishMusic();
   gameEndCleanup?.();
   gameEndCleanup = null;
   pendingResults = null;
@@ -173,6 +175,7 @@ function showGameEndOverlay(results) {
   document.getElementById("touch-controls")?.classList.add("hidden");
   gameEndOverlay?.classList.remove("hidden");
   gameEndOverlay?.classList.add("active");
+  startFinishMusic();
 
   let advanced = false;
 
