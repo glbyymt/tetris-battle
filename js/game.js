@@ -1,7 +1,6 @@
 import {
   TIME_ATTACK_LIMIT_SEC,
   BATTLE_LIMIT_SEC,
-  TIME_UP_DISPLAY_MS,
   LOCK_DELAY_MS,
 } from "./constants.js";
 import { SUB_MODE, applyLineClear } from "./modes.js";
@@ -31,6 +30,7 @@ import {
   computeMobileCellSizes,
 } from "./render.js";
 import { createInputManager } from "./input.js";
+import { startGameMusic, stopGameMusic } from "./audio.js";
 
 export class GameSession {
   constructor({ playerCount, subMode, onEnd, useTouchControls = false }) {
@@ -43,7 +43,6 @@ export class GameSession {
     );
     this.running = false;
     this.phase = "playing";
-    this.timeUpElapsed = 0;
     this.elapsedMs = 0;
     this.timeLimitMs = this.getTimeLimitMs(subMode);
     this.rafId = null;
@@ -167,8 +166,8 @@ export class GameSession {
     });
     this.running = true;
     this.phase = "playing";
-    this.timeUpElapsed = 0;
     this.lastTs = performance.now();
+    startGameMusic();
     this.rafId = requestAnimationFrame((ts) => this.loop(ts));
   }
 
@@ -200,6 +199,8 @@ export class GameSession {
 
   unmount() {
     this.running = false;
+    this.phase = "ended";
+    stopGameMusic();
     if (this.rafId) cancelAnimationFrame(this.rafId);
     this.input?.destroy();
     this.hideTimeUpOverlay();
@@ -217,32 +218,29 @@ export class GameSession {
     }
   }
 
-  showTimeUpOverlay() {
-    this.dom.timeUpOverlay?.classList.add("active");
-  }
-
   hideTimeUpOverlay() {
     this.dom.timeUpOverlay?.classList.remove("active");
+  }
+
+  endGame() {
+    if (this.phase === "ended") return;
+    this.phase = "ended";
+    this.running = false;
+    if (this.rafId) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    this.input?.destroy();
+    this.input = null;
+    stopGameMusic();
+    this.hideTimeUpOverlay();
+    this.onEnd(this.buildResults());
   }
 
   loop(ts) {
     if (!this.running) return;
     const dt = Math.min(ts - this.lastTs, 50);
     this.lastTs = ts;
-
-    if (this.phase === "time-up") {
-      this.timeUpElapsed += dt;
-      this.render();
-      this.updateStatsDom();
-      if (this.timeUpElapsed >= TIME_UP_DISPLAY_MS) {
-        this.running = false;
-        this.hideTimeUpOverlay();
-        this.onEnd(this.buildResults());
-        return;
-      }
-      this.rafId = requestAnimationFrame((t) => this.loop(t));
-      return;
-    }
 
     this.elapsedMs += dt;
 
@@ -251,12 +249,7 @@ export class GameSession {
       this.elapsedMs >= this.timeLimitMs &&
       this.phase === "playing"
     ) {
-      this.phase = "time-up";
-      this.timeUpElapsed = 0;
-      this.showTimeUpOverlay();
-      this.render();
-      this.updateStatsDom();
-      this.rafId = requestAnimationFrame((t) => this.loop(t));
+      this.endGame();
       return;
     }
 
@@ -271,8 +264,7 @@ export class GameSession {
     this.updateStatsDom();
 
     if (this.checkGameEnd()) {
-      this.running = false;
-      this.onEnd(this.buildResults());
+      this.endGame();
       return;
     }
 
@@ -377,6 +369,7 @@ export class GameSession {
       playTimeSec,
       players: ranked.map((p, rank) => ({ ...p, rank: rank + 1 })),
       subMode: this.subMode,
+      playerCount: this.playerCount,
     };
   }
 

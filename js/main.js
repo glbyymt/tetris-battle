@@ -19,6 +19,8 @@ const gameBoards = document.getElementById("game-boards");
 const gameModeLabel = document.getElementById("game-mode-label");
 const gameTimer = document.getElementById("game-timer");
 const resultList = document.getElementById("result-list");
+const gameEndOverlay = document.getElementById("game-end-overlay");
+const gameEndTitle = document.getElementById("game-end-title");
 
 const MODE_NAMES = {
   [SUB_MODE.TIME_ATTACK]: "タイムアタック",
@@ -42,6 +44,10 @@ let selectedPlayers = 1;
 let selectedSubMode = SUB_MODE.TIME_ATTACK;
 let session = null;
 let timerInterval = null;
+/** @type {(() => void) | null} */
+let gameEndCleanup = null;
+/** @type {object | null} */
+let pendingResults = null;
 
 function setupMobileUi() {
   if (!IS_MOBILE) return;
@@ -64,6 +70,17 @@ function formatTime(sec) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function hideGameEndOverlay() {
+  gameEndCleanup?.();
+  gameEndCleanup = null;
+  pendingResults = null;
+  gameEndOverlay?.classList.add("hidden");
+  gameEndOverlay?.classList.remove("active");
+  document.querySelectorAll(".player-panel.winner").forEach((el) => {
+    el.classList.remove("winner");
+  });
 }
 
 function renderSubModeButtons(playerCount) {
@@ -98,6 +115,7 @@ function startGame(playerCount, subMode) {
     session = null;
   }
   clearInterval(timerInterval);
+  hideGameEndOverlay();
   document.getElementById("time-up-overlay")?.classList.remove("active");
 
   gameModeLabel.textContent = `${playerCount}人プレイ / ${MODE_NAMES[subMode]}`;
@@ -121,7 +139,7 @@ function startGame(playerCount, subMode) {
   session = new GameSession({
     playerCount,
     subMode,
-    onEnd: showResults,
+    onEnd: showGameEndOverlay,
     useTouchControls: IS_MOBILE,
   });
   session.mount(gameBoards);
@@ -134,8 +152,65 @@ function startGame(playerCount, subMode) {
   }
 }
 
-function showResults(results) {
+function showGameEndOverlay(results) {
   clearInterval(timerInterval);
+  pendingResults = results;
+
+  const isSinglePlayer = results.playerCount === 1;
+  if (isSinglePlayer) {
+    gameEndTitle.textContent = "GAME OVER";
+    gameEndTitle.classList.add("is-game-over");
+  } else {
+    const winner = results.players[0];
+    gameEndTitle.textContent = `${winner.name} Win`;
+    gameEndTitle.classList.remove("is-game-over");
+    const panel = document.querySelector(
+      `.player-panel[data-player="${winner.index}"]`
+    );
+    panel?.classList.add("winner");
+  }
+
+  document.getElementById("touch-controls")?.classList.add("hidden");
+  gameEndOverlay?.classList.remove("hidden");
+  gameEndOverlay?.classList.add("active");
+
+  let advanced = false;
+
+  const advance = () => {
+    if (advanced) return;
+    advanced = true;
+    const data = pendingResults;
+    hideGameEndOverlay();
+    if (data) showResults(data);
+  };
+
+  const onKeyDown = () => advance();
+  const onPointerDown = () => advance();
+
+  const gamepadInterval = setInterval(() => {
+    const pads = navigator.getGamepads?.() ?? [];
+    for (const pad of pads) {
+      if (!pad) continue;
+      for (const btn of pad.buttons) {
+        if (btn.pressed) {
+          advance();
+          return;
+        }
+      }
+    }
+  }, 100);
+
+  window.addEventListener("keydown", onKeyDown);
+  gameEndOverlay?.addEventListener("pointerdown", onPointerDown);
+
+  gameEndCleanup = () => {
+    window.removeEventListener("keydown", onKeyDown);
+    gameEndOverlay?.removeEventListener("pointerdown", onPointerDown);
+    clearInterval(gamepadInterval);
+  };
+}
+
+function showResults(results) {
   session?.unmount();
   session = null;
 
@@ -178,6 +253,7 @@ function resetTitleSubMode() {
 }
 
 document.getElementById("btn-back-title").addEventListener("click", () => {
+  hideGameEndOverlay();
   resetTitleSubMode();
   showScreen("title");
 });

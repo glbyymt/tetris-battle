@@ -172,6 +172,61 @@ body {
   display: flex;
 }
 
+.game-end-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: rgba(15, 15, 26, 0.88);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.game-end-overlay.active {
+  display: flex;
+}
+
+.game-end-title {
+  font-size: clamp(2rem, 8vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: center;
+  color: #fbbf24;
+  text-shadow:
+    0 0 20px rgba(251, 191, 36, 0.6),
+    0 4px 24px rgba(0, 0, 0, 0.9);
+}
+
+.game-end-title.is-game-over {
+  color: var(--accent);
+  text-shadow:
+    0 0 20px rgba(233, 69, 96, 0.8),
+    0 4px 24px rgba(0, 0, 0, 0.9);
+}
+
+.game-end-prompt {
+  font-size: clamp(0.875rem, 3vw, 1.125rem);
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-align: center;
+  animation: end-prompt-blink 1.2s ease-in-out infinite;
+}
+
+@keyframes end-prompt-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
 .game-boards {
   display: flex;
   flex-wrap: wrap;

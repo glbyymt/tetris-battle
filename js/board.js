@@ -125,25 +125,39 @@ export function clearLines(board) {
   return { clearedLines: clearedCount };
 }
 
+/** @returns {number[]} 0〜cols-1 から holeCount 個の列インデックス（重複なし） */
+function pickRandomHoleColumns(holeCount, cols) {
+  const indices = Array.from({ length: cols }, (_, i) => i);
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  return indices.slice(0, holeCount);
+}
+
 /**
- * お邪魔ブロックを下からせり上げ（ランダム列に配置）
- * @param {number} count 送るブロック数
+ * お邪魔ブロックを下から行単位でせり上げる
+ * @param {number} rowCount せり上げる行数
+ * @param {number} holesPerRow 1行あたりの穴の数
  */
-export function addGarbageFromBottom(board, count) {
-  for (let i = 0; i < count; i++) {
-    const col = Math.floor(Math.random() * COLS);
-    // 最下段が埋まっていれば1段上に押し上げ
-    if (board.grid[ROWS - 1][col] !== CELL_EMPTY) {
-      for (let y = ROWS - 1; y > 0; y--) {
-        board.grid[y][col] = board.grid[y - 1][col];
-        board.garbageHp[y][col] = board.garbageHp[y - 1][col];
-      }
-      board.grid[0][col] = CELL_GARBAGE;
-      board.garbageHp[0][col] = GARBAGE_HP;
-    } else {
-      board.grid[ROWS - 1][col] = CELL_GARBAGE;
-      board.garbageHp[ROWS - 1][col] = GARBAGE_HP;
+export function addGarbageRowsFromBottom(board, rowCount, holesPerRow) {
+  if (rowCount <= 0) return;
+
+  const holeCount = Math.min(holesPerRow, COLS - 1);
+
+  for (let r = 0; r < rowCount; r++) {
+    board.grid.shift();
+    board.garbageHp.shift();
+
+    const holeCols = new Set(pickRandomHoleColumns(holeCount, COLS));
+    const newRow = Array(COLS).fill(CELL_GARBAGE);
+    const newHp = Array(COLS).fill(GARBAGE_HP);
+    for (const x of holeCols) {
+      newRow[x] = CELL_EMPTY;
+      newHp[x] = 0;
     }
+    board.grid.push(newRow);
+    board.garbageHp.push(newHp);
   }
 }
 

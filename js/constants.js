@@ -45,12 +45,15 @@ export const TIME_ATTACK_SCORES = {
   4: 500,
 };
 
-/** 対戦モードのお邪魔ブロック送信数（列数 → 個数） */
-export const BATTLE_GARBAGE_SEND = {
-  1: 2,
-  2: 4,
-  3: 6,
-  4: 8,
+/**
+ * 対戦モードのお邪魔ブロック（消したライン数 → せり上げ行数・1行あたりの穴の数）
+ * @type {Record<number, { rows: number, holes: number }>}
+ */
+export const BATTLE_GARBAGE_PATTERN = {
+  1: { rows: 1, holes: 1 },
+  2: { rows: 2, holes: 3 },
+  3: { rows: 3, holes: 3 },
+  4: { rows: 5, holes: 5 },
 };
 
 /** お邪魔ブロックの耐久（2回のライン消去で消える） */
