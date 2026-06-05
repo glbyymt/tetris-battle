@@ -47,7 +47,7 @@ function getSubModesForPlayers(playerCount) {
   if (!IS_MOBILE && playerCount >= 2) {
     modes.push({ id: SUB_MODE.BATTLE, label: "対戦モード" });
   }
-  if (playerCount <= 3) {
+  if (playerCount <= 4) {
     modes.push({ id: SUB_MODE.SUDDEN_DEATH, label: "サドンデス" });
   }
   return modes;
